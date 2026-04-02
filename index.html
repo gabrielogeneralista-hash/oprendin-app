@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<title>OPRENDIN</title>
+<style>
+/* ── RESET & BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { background: #f0f2f5; color: #1a1a2e; }
+
+/* ── VARIÁVEIS ── */
+:root {
+  --brand: #1a1a2e;
+  --accent: #e94560;
+  --accent2: #0f3460;
+  --surface: #ffffff;
+  --surface2: #f8f9fb;
+  --border: #e8eaed;
+  --text: #1a1a2e;
+  --text2: #6b7280;
+  --success: #10b981;
+  --warn: #f59e0b;
+  --radius: 16px;
+  --shadow: 0 2px 16px rgba(0,0,0,.08);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── APP SHELL ── */
+#app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+}
+
+/* ── TELAS ── */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transform: translateY(24px);
+  transition: opacity .25s, transform .25s;
+}
+.screen.active {
+  opacity: 1; pointer-events: all;
+  transform: translateY(0);
+}
+
+/* ── SPLASH ── */
+#s-splash {
+  background: var(--brand);
+  align-items: center; justify-content: center; gap: 16px;
+}
+.splash-logo {
+  width: 80px; height: 80px; border-radius: 24px;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+  font-size: 36px; color: #fff; font-weight: 900; letter-spacing: -2px;
+}
+.splash-name { color: #fff; font-size: 28px; font-weight: 700; letter-spacing: 2px; }
+.splash-sub  { color: rgba(255,255,255,.5); font-size: 13px; letter-spacing: 1px; }
+.spinner {
+  width: 32px; height: 32px; border: 3px solid rgba(255,255,255,.2);
+  border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite;
+  margin-top: 32px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── LOGIN ── */
+#s-login {
+  background: var(--brand);
+  padding: calc(var(--safe-top) + 40px) 24px calc(var(--safe-bot) + 32px);
+  justify-content: flex-end;
+}
+.login-top { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.login-logo {
+  width: 64px; height: 64px; border-radius: 20px;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: #fff; font-weight: 900;
+}
+.login-title { color: #fff; font-size: 24px; font-weight: 700; }
+.login-sub   { color: rgba(255,255,255,.5); font-size: 13px; }
+
+.login-card {
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 32px 24px calc(var(--safe-bot) + 24px);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.login-card h2 { font-size: 20px; font-weight: 700; color: var(--text); }
+
+/* ── CAMPOS ── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+.field input, .field select, .field textarea {
+  height: 52px; padding: 0 16px;
+  border: 1.5px solid var(--border); border-radius: 12px;
+  font-size: 16px; color: var(--text); background: var(--surface2);
+  outline: none; -webkit-appearance: none; appearance: none;
+  transition: border-color .15s;
+}
+.field textarea { height: auto; padding: 14px 16px; resize: none; }
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--accent); background: #fff;
+}
+.field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 44px; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── BOTÕES ── */
+.btn {
+  height: 56px; border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity .15s, transform .1s; -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--surface2); color: var(--text2); border: 1.5px solid var(--border); }
+.btn-ghost { background: transparent; color: var(--text2); height: 44px; font-size: 14px; font-weight: 500; }
+.btn:disabled { opacity: .5; pointer-events: none; }
+
+/* ── TOPBAR ── */
+.topbar {
+  height: calc(var(--safe-top) + 56px);
+  padding-top: var(--safe-top);
+  background: var(--brand);
+  display: flex; align-items: center; gap: 12px;
+  padding-left: 8px; padding-right: 16px;
+  flex-shrink: 0;
+}
+.topbar-back {
+  width: 40px; height: 40px; border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center; border-radius: 10px;
+  color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.topbar-title { flex: 1; font-size: 17px; font-weight: 700; color: #fff; }
+.topbar-sub   { font-size: 12px; color: rgba(255,255,255,.6); font-weight: 400; display: block; margin-top: 1px; }
+.topbar-avatar {
+  width: 34px; height: 34px; border-radius: 10px; background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── SCROLLABLE BODY ── */
+.scroll-body {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 20px 16px calc(var(--safe-bot) + 100px);
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.card-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.card-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.card-icon.blue  { background: #eff6ff; }
+.card-icon.green { background: #f0fdf4; }
+.card-icon.amber { background: #fffbeb; }
+.card-icon.red   { background: #fff1f2; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.card-sub   { font-size: 12px; color: var(--text2); margin-top: 1px; }
+.card-body  { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ── OP SELECTOR ── */
+#s-ops .scroll-body { padding-bottom: 20px; }
+.op-item {
+  background: var(--surface); border-radius: var(--radius);
+  padding: 16px; display: flex; align-items: center; gap: 14px;
+  box-shadow: var(--shadow); cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .1s;
+}
+.op-item:active { transform: scale(.98); }
+.op-num {
+  width: 48px; height: 48px; border-radius: 12px; background: var(--brand);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0; text-align: center; line-height: 1.2;
+}
+.op-info { flex: 1; min-width: 0; }
+.op-cliente { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-desc    { font-size: 13px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-badge {
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; flex-shrink: 0;
+}
+.op-badge.verde  { background: #dcfce7; color: #166534; }
+.op-badge.azul   { background: #dbeafe; color: #1e40af; }
+.op-badge.ambar  { background: #fef3c7; color: #92400e; }
+
+/* ── SEARCH BAR ── */
+.search-wrap { padding: 12px 16px 0; flex-shrink: 0; }
+.search-input {
+  width: 100%; height: 44px; border: none; border-radius: 12px;
+  background: var(--surface); padding: 0 16px 0 42px;
+  font-size: 15px; color: var(--text); outline: none;
+  box-shadow: var(--shadow);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: 14px center;
+}
+
+/* ── FAB (botão flutuante) ── */
+.fab-wrap {
+  position: absolute; bottom: calc(var(--safe-bot) + 20px); left: 16px; right: 16px;
+  pointer-events: none;
+}
+.fab-wrap .btn { pointer-events: all; box-shadow: 0 4px 20px rgba(233,69,96,.4); }
+
+/* ── STEP INDICATOR ── */
+.steps {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 16px; flex-shrink: 0;
+}
+.step-dot {
+  height: 4px; border-radius: 2px; background: rgba(255,255,255,.3);
+  transition: all .3s; flex: 1;
+}
+.step-dot.done  { background: var(--accent); }
+.step-dot.active { background: #fff; flex: 2; }
+
+/* ── ETAPA ITEM ── */
+.etapa-item {
+  background: var(--surface); border-radius: var(--radius); padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  box-shadow: var(--shadow); -webkit-tap-highlight-color: transparent;
+  transition: transform .1s;
+}
+.etapa-item:active { transform: scale(.98); }
+.etapa-num {
+  width: 40px; height: 40px; border-radius: 10px; background: var(--surface2);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.etapa-nome { flex: 1; font-size: 15px; font-weight: 600; color: var(--text); }
+.etapa-tipo { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.etapa-arrow { color: var(--text2); font-size: 20px; }
+
+/* ── RESUMO ── */
+.resumo-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.resumo-row:last-child { border-bottom: none; }
+.resumo-label { font-size: 13px; color: var(--text2); }
+.resumo-val   { font-size: 14px; font-weight: 600; color: var(--text); text-align: right; max-width: 60%; }
+
+/* ── SUCESSO ── */
+#s-ok {
+  background: var(--brand);
+  align-items: center; justify-content: center; gap: 20px;
+  text-align: center; padding: 40px 32px;
+}
+.ok-circle {
+  width: 96px; height: 96px; border-radius: 50%; background: var(--success);
+  display: flex; align-items: center; justify-content: center; font-size: 48px;
+}
+.ok-title  { color: #fff; font-size: 26px; font-weight: 800; }
+.ok-msg    { color: rgba(255,255,255,.6); font-size: 15px; line-height: 1.6; }
+.ok-btns   { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
+
+/* ── HORA RÁPIDA ── */
+.time-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.time-pill {
+  padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer;
+  background: var(--surface2); -webkit-tap-highlight-color: transparent;
+  transition: all .15s;
+}
+.time-pill.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: calc(var(--safe-bot) + 80px); left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #1a1a2e; color: #fff; padding: 12px 20px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; white-space: nowrap;
+  opacity: 0; transition: all .25s; pointer-events: none; z-index: 100;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── LOADING OVERLAY ── */
+#loading {
+  position: fixed; inset: 0; background: rgba(26,26,46,.7);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 200;
+}
+#loading.show { opacity: 1; pointer-events: all; }
+.loading-card {
+  background: #fff; border-radius: 20px; padding: 32px 40px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.loading-card .spinner { border-color: var(--border); border-top-color: var(--accent); }
+.loading-card span { font-size: 14px; font-weight: 600; color: var(--text2); }
+
+/* ── ERRO ── */
+.err-msg { font-size: 13px; color: var(--accent); font-weight: 600; text-align: center; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══════════════════════════════════
+     SPLASH
+══════════════════════════════════ -->
+<div class="screen active" id="s-splash">
+  <div class="splash-logo">OP</div>
+  <div class="splash-name">OPRENDIN</div>
+  <div class="splash-sub">GESTÃO DE PRODUÇÃO</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- ══════════════════════════════════
+     LOGIN
+══════════════════════════════════ -->
+<div class="screen" id="s-login">
+  <div class="login-top">
+    <div class="login-logo">OP</div>
+    <div class="login-title">OPRENDIN</div>
+    <div class="login-sub">Apontamento de Produção</div>
+  </div>
+  <div class="login-card">
+    <h2>Entrar</h2>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="l-email" placeholder="seu@email.com" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="l-senha" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="err-msg" id="l-err" style="display:none"></div>
+    <button class="btn btn-primary" id="btn-login" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SELEÇÃO DE OP
+══════════════════════════════════ -->
+<div class="screen" id="s-ops">
+  <div class="topbar">
+    <div class="topbar-title">
+      Ordens de Produção
+      <span class="topbar-sub" id="ops-sub">Selecione para apontar</span>
+    </div>
+    <div class="topbar-avatar" id="avatar-ops" onclick="logoutConfirm()">?</div>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" type="search" placeholder="Buscar OP..." oninput="filtrarOPs(this.value)" autocomplete="off">
+  </div>
+  <div class="scroll-body" id="lista-ops">
+    <!-- preenchida via JS -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SELEÇÃO DE ETAPA
+══════════════════════════════════ -->
+<div class="screen" id="s-etapas">
+  <div class="topbar" style="background: var(--accent2);">
+    <button class="topbar-back" onclick="ir('s-ops')">&#8592;</button>
+    <div class="topbar-title">
+      <span id="etapa-op-num">OP-001</span>
+      <span class="topbar-sub" id="etapa-op-cliente">Cliente</span>
+    </div>
+  </div>
+  <div class="steps" style="background: var(--accent2);">
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+  </div>
+  <div class="scroll-body" id="lista-etapas">
+    <!-- preenchida via JS -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     FORMULÁRIO DE APONTAMENTO
+══════════════════════════════════ -->
+<div class="screen" id="s-form">
+  <div class="topbar" style="background: var(--accent2);">
+    <button class="topbar-back" onclick="ir('s-etapas')">&#8592;</button>
+    <div class="topbar-title">
+      Apontamento
+      <span class="topbar-sub" id="form-sub">OP · Etapa</span>
+    </div>
+  </div>
+  <div class="steps" style="background: var(--accent2);">
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+  </div>
+  <div class="scroll-body">
+
+    <!-- Identificação -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">👤</div>
+        <div>
+          <div class="card-title">Operador</div>
+          <div class="card-sub">Quem está executando?</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Funcionário</label>
+          <select id="f-func">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Horário -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon amber">⏱</div>
+        <div>
+          <div class="card-title">Horário</div>
+          <div class="card-sub">Período trabalhado</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Início rápido</label>
+          <div class="time-pills" id="pills-inicio"></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Início</label>
+            <input type="time" id="f-inicio">
+          </div>
+          <div class="field">
+            <label>Fim</label>
+            <input type="time" id="f-fim">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Produção -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon green">📦</div>
+        <div>
+          <div class="card-title">Produção</div>
+          <div class="card-sub">O que foi feito?</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Quantidade produzida</label>
+          <input type="number" id="f-qtd" placeholder="0" min="0" step="1" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>Unidade</label>
+          <select id="f-unid">
+            <option value="pç">Peças (pç)</option>
+            <option value="m">Metros (m)</option>
+            <option value="kg">Quilos (kg)</option>
+            <option value="h">Horas (h)</option>
+            <option value="%">Percentual (%)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status da etapa</label>
+          <select id="f-status">
+            <option value="Em execução">Em execução</option>
+            <option value="Concluído">Concluído</option>
+            <option value="Atrasado">Atrasado</option>
+            <option value="Aguardando Liberação">Aguardando Liberação</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observações -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon red">📝</div>
+        <div>
+          <div class="card-title">Observações</div>
+          <div class="card-sub">Opcional</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <textarea id="f-obs" rows="3" placeholder="Ocorrências, paradas, qualidade..."></textarea>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Botão fixo -->
+  <div class="fab-wrap">
+    <button class="btn btn-primary" onclick="confirmarApontamento()">
+      ✓ &nbsp;Salvar Apontamento
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     CONFIRMAÇÃO
+══════════════════════════════════ -->
+<div class="screen" id="s-ok">
+  <div class="ok-circle">✓</div>
+  <div class="ok-title">Apontamento salvo!</div>
+  <div class="ok-msg" id="ok-msg">Os dados foram registrados<br>com sucesso.</div>
+  <div class="ok-btns">
+    <button class="btn btn-primary" onclick="novoApontamento()" style="background:#fff;color:var(--brand)">
+      + Novo Apontamento
+    </button>
+    <button class="btn btn-ghost" style="color:rgba(255,255,255,.6)" onclick="ir('s-ops')">
+      Voltar às OPs
+    </button>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- Toast & Loading -->
+<div id="toast"></div>
+<div id="loading"><div class="loading-card"><div class="spinner"></div><span>Aguarde...</span></div></div>
+
+<script>
+// ════════════════════════════════════════
+// CONFIG — troque pela URL do seu GAS web app
+// ════════════════════════════════════════
+var GAS_URL = 'SUA_URL_AQUI'; // ex: https://script.google.com/macros/s/ABC.../exec
+
+// ════════════════════════════════════════
+// ESTADO
+// ════════════════════════════════════════
+var ST = {
+  usuario: null,
+  token: null,
+  ops: [],
+  funcionarios: [],
+  opSel: null,
+  etapaSel: null,
+};
+
+// ════════════════════════════════════════
+// DADOS MOCK (para testar sem backend)
+// ════════════════════════════════════════
+var MOCK_OPS = [
+  { OP: 'OP-024', CLIENTE: 'Petrobrás', DESCRICAO: 'Estrutura metálica plataforma', STATUS: 'Em execução', ETAPAS: [
+    { ETAPA: 'Corte', TIPO: 'Interno' }, { ETAPA: 'Dobra', TIPO: 'Interno' }, { ETAPA: 'Solda', TIPO: 'Interno' }, { ETAPA: 'Pintura', TIPO: 'Terceiro' }
+  ]},
+  { OP: 'OP-023', CLIENTE: 'Vale S.A.', DESCRICAO: 'Suporte de correia transportadora', STATUS: 'Liberado', ETAPAS: [
+    { ETAPA: 'Corte', TIPO: 'Interno' }, { ETAPA: 'Solda', TIPO: 'Interno' }, { ETAPA: 'Jateamento', TIPO: 'Terceiro' }
+  ]},
+  { OP: 'OP-022', CLIENTE: 'Usiminas', DESCRICAO: 'Gaiola de proteção CNC', STATUS: 'Atrasado', ETAPAS: [
+    { ETAPA: 'Usinagem', TIPO: 'Terceiro' }, { ETAPA: 'Montagem', TIPO: 'Interno' }
+  ]},
+  { OP: 'OP-021', CLIENTE: 'WEG', DESCRICAO: 'Chapa de fixação motor', STATUS: 'Em execução', ETAPAS: [
+    { ETAPA: 'Corte', TIPO: 'Interno' }, { ETAPA: 'Furação', TIPO: 'Interno' }
+  ]},
+];
+var MOCK_FUNC = ['Carlos Silva', 'João Souza', 'Pedro Alves', 'Marcos Lima', 'André Rocha'];
+
+// ════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════
+function ir(id) {
+  document.querySelectorAll('.screen').forEach(function(s) {
+    s.classList.remove('active');
+  });
+  document.getElementById(id).classList.add('active');
+}
+
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 2800);
+}
+
+function load(on) {
+  document.getElementById('loading').classList.toggle('show', on);
+}
+
+function hojeStr() {
+  var d = new Date();
+  return d.toLocaleDateString('pt-BR');
+}
+
+function agoraHH() {
+  var d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function roundTo30(h, m) {
+  var tot = h * 60 + m;
+  tot = Math.round(tot / 30) * 30;
+  return String(Math.floor(tot/60)).padStart(2,'0') + ':' + String(tot%60).padStart(2,'0');
+}
+
+// ════════════════════════════════════════
+// API (real quando GAS_URL estiver configurado)
+// ════════════════════════════════════════
+function api(action, payload, cb) {
+  if (!GAS_URL || GAS_URL === 'SUA_URL_AQUI') {
+    // MODO MOCK
+    setTimeout(function() { cb(mockResponder(action, payload)); }, 600);
+    return;
+  }
+  var url = GAS_URL + '?action=' + action + '&t=' + Date.now();
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: action, payload: payload || {}, token: ST.token })
+  })
+  .then(function(r) { return r.json(); })
+  .then(cb)
+  .catch(function(e) { cb({ ok: false, erro: 'Sem conexão com o servidor.' }); });
+}
+
+function mockResponder(action, p) {
+  if (action === 'fazerLogin') {
+    if (p.senha === '1234') return { ok: true, token: 'mock-token', nome: p.email.split('@')[0] };
+    return { ok: false, erro: 'Senha inválida. Use 1234 para testar.' };
+  }
+  if (action === 'getOPs') return { ok: true, ops: MOCK_OPS, funcionarios: MOCK_FUNC };
+  if (action === 'salvarApontamento') return { ok: true };
+  return { ok: false, erro: 'Ação desconhecida.' };
+}
+
+// ════════════════════════════════════════
+// TELA: LOGIN
+// ════════════════════════════════════════
+function fazerLogin() {
+  var email = document.getElementById('l-email').value.trim();
+  var senha = document.getElementById('l-senha').value;
+  var err   = document.getElementById('l-err');
+  var btn   = document.getElementById('btn-login');
+
+  err.style.display = 'none';
+  if (!email || !senha) { err.textContent = 'Preencha e-mail e senha.'; err.style.display = ''; return; }
+
+  btn.disabled = true;
+  load(true);
+
+  api('fazerLogin', { email: email, senha: senha }, function(r) {
+    load(false);
+    btn.disabled = false;
+    if (!r.ok) { err.textContent = r.erro; err.style.display = ''; return; }
+    ST.token  = r.token;
+    ST.usuario = r.nome || email.split('@')[0];
+    carregarOPs();
+  });
+}
+
+// Enter no campo de senha dispara login
+document.getElementById('l-senha').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') fazerLogin();
+});
+
+// ════════════════════════════════════════
+// TELA: OPs
+// ════════════════════════════════════════
+function carregarOPs() {
+  load(true);
+  api('getOPs', {}, function(r) {
+    load(false);
+    if (!r.ok) { toast('Erro: ' + r.erro); return; }
+    ST.ops = r.ops || [];
+    ST.funcionarios = r.funcionarios || MOCK_FUNC;
+    document.getElementById('avatar-ops').textContent = (ST.usuario || '?').charAt(0).toUpperCase();
+    preencherFuncionarios();
+    renderOPs(ST.ops);
+    ir('s-ops');
+  });
+}
+
+var STATUS_BADGE = {
+  'Em execução': 'azul', 'Liberado': 'verde', 'Atrasado': 'ambar',
+  'Aguardando Liberação': 'ambar', 'Concluído': 'verde',
+};
+
+function renderOPs(lista) {
+  var el = document.getElementById('lista-ops');
+  if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:40px 0">Nenhuma OP aberta</p>'; return; }
+  el.innerHTML = lista.map(function(op) {
+    var badge = STATUS_BADGE[op.STATUS] || 'azul';
+    return '<div class="op-item" onclick="selecionarOP(\'' + op.OP + '\')">' +
+      '<div class="op-num">' + op.OP.replace('OP-','') + '</div>' +
+      '<div class="op-info">' +
+        '<div class="op-cliente">' + esc(op.CLIENTE) + '</div>' +
+        '<div class="op-desc">' + esc(op.DESCRICAO || '') + '</div>' +
+      '</div>' +
+      '<div class="op-badge ' + badge + '">' + op.STATUS + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function filtrarOPs(q) {
+  q = q.toLowerCase();
+  var filtrado = ST.ops.filter(function(op) {
+    return op.OP.toLowerCase().includes(q) || (op.CLIENTE||'').toLowerCase().includes(q) || (op.DESCRICAO||'').toLowerCase().includes(q);
+  });
+  renderOPs(filtrado);
+}
+
+// ════════════════════════════════════════
+// TELA: ETAPAS
+// ════════════════════════════════════════
+var ETAPA_ICONS = { 'Corte':'✂️','Solda':'🔥','Pintura':'🎨','Usinagem':'⚙️','Montagem':'🔩','Dobra':'📐','Furação':'🔧','Jateamento':'💨' };
+
+function selecionarOP(cod) {
+  ST.opSel = ST.ops.find(function(o) { return o.OP === cod; });
+  if (!ST.opSel) return;
+
+  document.getElementById('etapa-op-num').textContent = ST.opSel.OP;
+  document.getElementById('etapa-op-cliente').textContent = ST.opSel.CLIENTE;
+
+  var etapas = ST.opSel.ETAPAS || [];
+  var el = document.getElementById('lista-etapas');
+  if (!etapas.length) { el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:40px 0">Nenhuma etapa cadastrada nesta OP</p>'; }
+  else {
+    el.innerHTML = etapas.map(function(et, i) {
+      var icon = ETAPA_ICONS[et.ETAPA] || '🔧';
+      return '<div class="etapa-item" onclick="selecionarEtapa(' + i + ')">' +
+        '<div class="etapa-num">' + icon + '</div>' +
+        '<div style="flex:1"><div class="etapa-nome">' + esc(et.ETAPA) + '</div>' +
+          '<div class="etapa-tipo">' + (et.TIPO || 'Interno') + '</div>' +
+        '</div>' +
+        '<div class="etapa-arrow">›</div>' +
+      '</div>';
+    }).join('');
+  }
+  ir('s-etapas');
+}
+
+// ════════════════════════════════════════
+// TELA: FORM
+// ════════════════════════════════════════
+function selecionarEtapa(idx) {
+  ST.etapaSel = ST.opSel.ETAPAS[idx];
+  document.getElementById('form-sub').textContent = ST.opSel.OP + ' · ' + ST.etapaSel.ETAPA;
+
+  // Hora atual arredondada como sugestão de início
+  var agora = new Date();
+  var hh = agora.getHours(), mm = agora.getMinutes();
+  var ini = roundTo30(hh, mm);
+  document.getElementById('f-inicio').value = ini;
+  document.getElementById('f-fim').value = '';
+  document.getElementById('f-qtd').value = '';
+  document.getElementById('f-obs').value = '';
+  document.getElementById('f-status').value = 'Em execução';
+
+  // Pílulas de hora rápida
+  var pills = document.getElementById('pills-inicio');
+  var opts = [];
+  for (var i = -2; i <= 1; i++) {
+    var tot = hh * 60 + mm + i * 30;
+    if (tot < 0 || tot > 23*60+59) continue;
+    opts.push(String(Math.floor(tot/60)).padStart(2,'0') + ':' + String(tot%60).padStart(2,'0'));
+  }
+  pills.innerHTML = opts.map(function(t) {
+    return '<div class="time-pill' + (t === ini ? ' sel' : '') + '" onclick="selecionarPill(this,\'f-inicio\')">' + t + '</div>';
+  }).join('');
+
+  ir('s-form');
+}
+
+function selecionarPill(el, campo) {
+  document.querySelectorAll('.time-pill').forEach(function(p) { p.classList.remove('sel'); });
+  el.classList.add('sel');
+  document.getElementById(campo).value = el.textContent;
+}
+
+function preencherFuncionarios() {
+  var sel = document.getElementById('f-func');
+  sel.innerHTML = '<option value="">Selecione...</option>' +
+    ST.funcionarios.map(function(f) {
+      var nome = typeof f === 'object' ? f.NOME : f;
+      return '<option value="' + esc(nome) + '">' + esc(nome) + '</option>';
+    }).join('');
+}
+
+// ════════════════════════════════════════
+// SALVAR
+// ════════════════════════════════════════
+function confirmarApontamento() {
+  var func   = document.getElementById('f-func').value;
+  var inicio = document.getElementById('f-inicio').value;
+  var fim    = document.getElementById('f-fim').value;
+  var qtd    = document.getElementById('f-qtd').value;
+  var status = document.getElementById('f-status').value;
+  var obs    = document.getElementById('f-obs').value;
+
+  if (!func)   { toast('Selecione o funcionário'); return; }
+  if (!inicio) { toast('Informe o horário de início'); return; }
+
+  var payload = {
+    token: ST.token,
+    OP: ST.opSel.OP,
+    ETAPA: ST.etapaSel.ETAPA,
+    FUNCIONARIO: func,
+    DATA: hojeStr(),
+    HORA_INICIO: inicio,
+    HORA_FIM: fim,
+    QUANTIDADE: qtd,
+    UNIDADE: document.getElementById('f-unid').value,
+    STATUS: status,
+    OBSERVACAO: obs,
+  };
+
+  load(true);
+  api('salvarApontamento', payload, function(r) {
+    load(false);
+    if (!r.ok) { toast('Erro: ' + r.erro); return; }
+    var msg = ST.opSel.OP + ' · ' + ST.etapaSel.ETAPA + '\n' + func + ' · ' + hojeStr();
+    document.getElementById('ok-msg').innerHTML = 'Apontamento registrado com sucesso.<br><small style="opacity:.6">' + msg + '</small>';
+    ir('s-ok');
+  });
+}
+
+function novoApontamento() {
+  // Volta para etapas da mesma OP
+  if (ST.opSel) selecionarOP(ST.opSel.OP);
+  else ir('s-ops');
+}
+
+function logoutConfirm() {
+  if (confirm('Sair do aplicativo?')) {
+    ST.token = null; ST.usuario = null;
+    ir('s-login');
+  }
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+window.addEventListener('load', function() {
+  setTimeout(function() { ir('s-login'); }, 1400);
+});
+</script>
+</body>
+</html>
