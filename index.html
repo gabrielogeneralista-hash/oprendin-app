@@ -533,9 +533,9 @@ body { background: #f0f2f5; color: #1a1a2e; }
 
 <script>
 // ════════════════════════════════════════
-// CONFIG — troque pela URL do seu GAS web app
+// CONFIG — URL do GAS web app
 // ════════════════════════════════════════
-var GAS_URL = 'SUA_URL_AQUI'; // ex: https://script.google.com/macros/s/ABC.../exec
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbxsf2rLtSS55vfXHV3amKSHYcxW-EL-9-ASvgR0euTwi5TzfJQ_riCReiHwoHLfUBLZIQ/exec';
 
 // ════════════════════════════════════════
 // ESTADO
@@ -543,38 +543,17 @@ var GAS_URL = 'SUA_URL_AQUI'; // ex: https://script.google.com/macros/s/ABC.../e
 var ST = {
   usuario: null,
   token: null,
-  ops: [],
-  funcionarios: [],
+  ops: [],           // lista de OPs com ETAPAS[] aninhadas
+  funcionarios: [],  // lista de nomes
   opSel: null,
   etapaSel: null,
 };
 
 // ════════════════════════════════════════
-// DADOS MOCK (para testar sem backend)
-// ════════════════════════════════════════
-var MOCK_OPS = [
-  { OP: 'OP-024', CLIENTE: 'Petrobrás', DESCRICAO: 'Estrutura metálica plataforma', STATUS: 'Em execução', ETAPAS: [
-    { ETAPA: 'Corte', TIPO: 'Interno' }, { ETAPA: 'Dobra', TIPO: 'Interno' }, { ETAPA: 'Solda', TIPO: 'Interno' }, { ETAPA: 'Pintura', TIPO: 'Terceiro' }
-  ]},
-  { OP: 'OP-023', CLIENTE: 'Vale S.A.', DESCRICAO: 'Suporte de correia transportadora', STATUS: 'Liberado', ETAPAS: [
-    { ETAPA: 'Corte', TIPO: 'Interno' }, { ETAPA: 'Solda', TIPO: 'Interno' }, { ETAPA: 'Jateamento', TIPO: 'Terceiro' }
-  ]},
-  { OP: 'OP-022', CLIENTE: 'Usiminas', DESCRICAO: 'Gaiola de proteção CNC', STATUS: 'Atrasado', ETAPAS: [
-    { ETAPA: 'Usinagem', TIPO: 'Terceiro' }, { ETAPA: 'Montagem', TIPO: 'Interno' }
-  ]},
-  { OP: 'OP-021', CLIENTE: 'WEG', DESCRICAO: 'Chapa de fixação motor', STATUS: 'Em execução', ETAPAS: [
-    { ETAPA: 'Corte', TIPO: 'Interno' }, { ETAPA: 'Furação', TIPO: 'Interno' }
-  ]},
-];
-var MOCK_FUNC = ['Carlos Silva', 'João Souza', 'Pedro Alves', 'Marcos Lima', 'André Rocha'];
-
-// ════════════════════════════════════════
 // UTILS
 // ════════════════════════════════════════
 function ir(id) {
-  document.querySelectorAll('.screen').forEach(function(s) {
-    s.classList.remove('active');
-  });
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
   document.getElementById(id).classList.add('active');
 }
 
@@ -594,45 +573,36 @@ function hojeStr() {
   return d.toLocaleDateString('pt-BR');
 }
 
-function agoraHH() {
-  var d = new Date();
-  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-}
-
 function roundTo30(h, m) {
-  var tot = h * 60 + m;
-  tot = Math.round(tot / 30) * 30;
+  var tot = Math.round((h * 60 + m) / 30) * 30;
   return String(Math.floor(tot/60)).padStart(2,'0') + ':' + String(tot%60).padStart(2,'0');
 }
 
+function calcHoras(ini, fim) {
+  if (!ini || !fim) return '';
+  var p = function(s) { var a = s.split(':'); return parseInt(a[0])*60 + parseInt(a[1]); };
+  var diff = p(fim) - p(ini);
+  if (diff <= 0) return '';
+  return (diff / 60).toFixed(2);
+}
+
 // ════════════════════════════════════════
-// API (real quando GAS_URL estiver configurado)
+// API — chama o GAS via doPost
+// Content-Type: text/plain evita preflight CORS
 // ════════════════════════════════════════
 function api(action, payload, cb) {
-  if (!GAS_URL || GAS_URL === 'SUA_URL_AQUI') {
-    // MODO MOCK
-    setTimeout(function() { cb(mockResponder(action, payload)); }, 600);
-    return;
-  }
-  var url = GAS_URL + '?action=' + action + '&t=' + Date.now();
-  fetch(url, {
+  var body = JSON.stringify({ action: action, payload: payload || {} });
+  fetch(GAS_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: action, payload: payload || {}, token: ST.token })
+    headers: { 'Content-Type': 'text/plain' },
+    body: body
   })
   .then(function(r) { return r.json(); })
   .then(cb)
-  .catch(function(e) { cb({ ok: false, erro: 'Sem conexão com o servidor.' }); });
-}
-
-function mockResponder(action, p) {
-  if (action === 'fazerLogin') {
-    if (p.senha === '1234') return { ok: true, token: 'mock-token', nome: p.email.split('@')[0] };
-    return { ok: false, erro: 'Senha inválida. Use 1234 para testar.' };
-  }
-  if (action === 'getOPs') return { ok: true, ops: MOCK_OPS, funcionarios: MOCK_FUNC };
-  if (action === 'salvarApontamento') return { ok: true };
-  return { ok: false, erro: 'Ação desconhecida.' };
+  .catch(function(err) {
+    console.error('API error:', err);
+    cb({ ok: false, erro: 'Sem conexão com o servidor.' });
+  });
 }
 
 // ════════════════════════════════════════
@@ -654,85 +624,143 @@ function fazerLogin() {
     load(false);
     btn.disabled = false;
     if (!r.ok) { err.textContent = r.erro; err.style.display = ''; return; }
-    ST.token  = r.token;
-    ST.usuario = r.nome || email.split('@')[0];
-    carregarOPs();
+    ST.token   = r.token;
+    ST.usuario = (r.usuario && r.usuario.nome) || email.split('@')[0];
+    // Salva sessão no localStorage para próxima abertura
+    localStorage.setItem('op_token', r.token);
+    localStorage.setItem('op_usuario', ST.usuario);
+    carregarDados();
   });
 }
 
-// Enter no campo de senha dispara login
 document.getElementById('l-senha').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') fazerLogin();
 });
 
 // ════════════════════════════════════════
-// TELA: OPs
+// TELA: OPs — carrega OPs + etapas + funcionários
 // ════════════════════════════════════════
-function carregarOPs() {
+function carregarDados() {
   load(true);
-  api('getOPs', {}, function(r) {
+  var opsData = null, funcData = null;
+  var pendentes = 2;
+
+  function checar() {
+    if (--pendentes > 0) return;
     load(false);
-    if (!r.ok) { toast('Erro: ' + r.erro); return; }
-    ST.ops = r.ops || [];
-    ST.funcionarios = r.funcionarios || MOCK_FUNC;
+
+    // Funcionários
+    ST.funcionarios = (funcData && funcData.dados || [])
+      .filter(function(f) { return (f.ATIVO || '').toUpperCase() !== 'NÃO' && (f.ATIVO || '').toUpperCase() !== 'NAO'; })
+      .map(function(f) { return f.NOME || ''; })
+      .filter(Boolean);
+
+    // Montar OPs com etapas aninhadas
+    var rawOps    = (opsData && opsData.ops)    || [];
+    var rawEtapas = (opsData && opsData.etapas) || [];
+
+    // Filtrar OPs ativas (não Concluídas)
+    var statusAtivos = ['Liberado', 'Em execução', 'Atrasado', 'Aguardando Liberação'];
+    ST.ops = rawOps
+      .filter(function(op) { return statusAtivos.indexOf(op.STATUS || op.STATUS_OP || '') >= 0; })
+      .map(function(op) {
+        var nrop = op.NROP || op.NRO_OP || op.N_OP || '';
+        var etapas = rawEtapas.filter(function(et) {
+          return (et.NROP || et.NRO_OP || et.N_OP || '') === nrop;
+        });
+        return {
+          NROP:     nrop,
+          CLIENTE:  op.CLIENTE  || op.NOME_CLIENTE || '',
+          DESCRICAO: op.DESCRICAO || op.PRODUTO || op.DESC || '',
+          STATUS:   op.STATUS   || op.STATUS_OP || '',
+          ETAPAS:   etapas
+        };
+      });
+
     document.getElementById('avatar-ops').textContent = (ST.usuario || '?').charAt(0).toUpperCase();
+    document.getElementById('ops-sub').textContent = ST.ops.length + ' OP(s) ativas';
     preencherFuncionarios();
     renderOPs(ST.ops);
     ir('s-ops');
+  }
+
+  api('getOPs', {}, function(r) {
+    if (!r.ok) { load(false); toast('Erro ao carregar OPs: ' + (r.erro || '')); return; }
+    opsData = r;
+    checar();
+  });
+
+  api('getFuncionarios', {}, function(r) {
+    funcData = r.ok ? r : null;
+    checar();
   });
 }
 
 var STATUS_BADGE = {
-  'Em execução': 'azul', 'Liberado': 'verde', 'Atrasado': 'ambar',
-  'Aguardando Liberação': 'ambar', 'Concluído': 'verde',
+  'Em execução': 'azul', 'Liberado': 'verde',
+  'Atrasado': 'ambar', 'Aguardando Liberação': 'ambar',
 };
 
 function renderOPs(lista) {
   var el = document.getElementById('lista-ops');
-  if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:40px 0">Nenhuma OP aberta</p>'; return; }
+  if (!lista.length) {
+    el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:40px 0">Nenhuma OP ativa</p>';
+    return;
+  }
   el.innerHTML = lista.map(function(op) {
     var badge = STATUS_BADGE[op.STATUS] || 'azul';
-    return '<div class="op-item" onclick="selecionarOP(\'' + op.OP + '\')">' +
-      '<div class="op-num">' + op.OP.replace('OP-','') + '</div>' +
+    var num   = op.NROP.replace(/^0+/, ''); // remove zeros à esquerda
+    return '<div class="op-item" onclick="selecionarOP(\'' + esc(op.NROP) + '\')">' +
+      '<div class="op-num">' + esc(num) + '</div>' +
       '<div class="op-info">' +
         '<div class="op-cliente">' + esc(op.CLIENTE) + '</div>' +
-        '<div class="op-desc">' + esc(op.DESCRICAO || '') + '</div>' +
+        '<div class="op-desc">' + esc(op.DESCRICAO) + '</div>' +
       '</div>' +
-      '<div class="op-badge ' + badge + '">' + op.STATUS + '</div>' +
+      '<div class="op-badge ' + badge + '">' + esc(op.STATUS) + '</div>' +
     '</div>';
   }).join('');
 }
 
 function filtrarOPs(q) {
   q = q.toLowerCase();
-  var filtrado = ST.ops.filter(function(op) {
-    return op.OP.toLowerCase().includes(q) || (op.CLIENTE||'').toLowerCase().includes(q) || (op.DESCRICAO||'').toLowerCase().includes(q);
-  });
-  renderOPs(filtrado);
+  renderOPs(ST.ops.filter(function(op) {
+    return op.NROP.toLowerCase().includes(q) ||
+           op.CLIENTE.toLowerCase().includes(q) ||
+           op.DESCRICAO.toLowerCase().includes(q);
+  }));
 }
 
 // ════════════════════════════════════════
 // TELA: ETAPAS
 // ════════════════════════════════════════
-var ETAPA_ICONS = { 'Corte':'✂️','Solda':'🔥','Pintura':'🎨','Usinagem':'⚙️','Montagem':'🔩','Dobra':'📐','Furação':'🔧','Jateamento':'💨' };
+var ETAPA_ICONS = {
+  'Corte':'✂️','Solda':'🔥','Pintura':'🎨','Usinagem':'⚙️',
+  'Montagem':'🔩','Dobra':'📐','Furação':'🔧','Jateamento':'💨',
+  'Inspeção':'🔍','Acabamento':'✨','Embalagem':'📦'
+};
 
-function selecionarOP(cod) {
-  ST.opSel = ST.ops.find(function(o) { return o.OP === cod; });
+function selecionarOP(nrop) {
+  ST.opSel = ST.ops.find(function(o) { return o.NROP === nrop; });
   if (!ST.opSel) return;
 
-  document.getElementById('etapa-op-num').textContent = ST.opSel.OP;
+  document.getElementById('etapa-op-num').textContent = ST.opSel.NROP;
   document.getElementById('etapa-op-cliente').textContent = ST.opSel.CLIENTE;
 
   var etapas = ST.opSel.ETAPAS || [];
   var el = document.getElementById('lista-etapas');
-  if (!etapas.length) { el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:40px 0">Nenhuma etapa cadastrada nesta OP</p>'; }
-  else {
+
+  if (!etapas.length) {
+    el.innerHTML = '<p style="text-align:center;color:var(--text2);padding:40px 0">Nenhuma etapa cadastrada nesta OP</p>';
+  } else {
     el.innerHTML = etapas.map(function(et, i) {
-      var icon = ETAPA_ICONS[et.ETAPA] || '🔧';
+      var nome = et.ETAPA || et.NOME_ETAPA || et.NOME || '';
+      var tipo = et.TIPO || et.TIPO_EXEC || 'Interno';
+      var icon = ETAPA_ICONS[nome] || '🔧';
       return '<div class="etapa-item" onclick="selecionarEtapa(' + i + ')">' +
         '<div class="etapa-num">' + icon + '</div>' +
-        '<div style="flex:1"><div class="etapa-nome">' + esc(et.ETAPA) + '</div>' +
-          '<div class="etapa-tipo">' + (et.TIPO || 'Interno') + '</div>' +
+        '<div style="flex:1">' +
+          '<div class="etapa-nome">' + esc(nome) + '</div>' +
+          '<div class="etapa-tipo">' + esc(tipo) + '</div>' +
         '</div>' +
         '<div class="etapa-arrow">›</div>' +
       '</div>';
@@ -746,9 +774,9 @@ function selecionarOP(cod) {
 // ════════════════════════════════════════
 function selecionarEtapa(idx) {
   ST.etapaSel = ST.opSel.ETAPAS[idx];
-  document.getElementById('form-sub').textContent = ST.opSel.OP + ' · ' + ST.etapaSel.ETAPA;
+  var nomeEtapa = ST.etapaSel.ETAPA || ST.etapaSel.NOME_ETAPA || ST.etapaSel.NOME || '';
+  document.getElementById('form-sub').textContent = ST.opSel.NROP + ' · ' + nomeEtapa;
 
-  // Hora atual arredondada como sugestão de início
   var agora = new Date();
   var hh = agora.getHours(), mm = agora.getMinutes();
   var ini = roundTo30(hh, mm);
@@ -758,16 +786,16 @@ function selecionarEtapa(idx) {
   document.getElementById('f-obs').value = '';
   document.getElementById('f-status').value = 'Em execução';
 
-  // Pílulas de hora rápida
+  // Pílulas de horário rápido (opções a cada 30min em torno do atual)
   var pills = document.getElementById('pills-inicio');
-  var opts = [];
+  var opts  = [];
   for (var i = -2; i <= 1; i++) {
     var tot = hh * 60 + mm + i * 30;
     if (tot < 0 || tot > 23*60+59) continue;
     opts.push(String(Math.floor(tot/60)).padStart(2,'0') + ':' + String(tot%60).padStart(2,'0'));
   }
   pills.innerHTML = opts.map(function(t) {
-    return '<div class="time-pill' + (t === ini ? ' sel' : '') + '" onclick="selecionarPill(this,\'f-inicio\')">' + t + '</div>';
+    return '<div class="time-pill' + (t === ini ? ' sel':'') + '" onclick="selecionarPill(this,\'f-inicio\')">' + t + '</div>';
   }).join('');
 
   ir('s-form');
@@ -782,59 +810,67 @@ function selecionarPill(el, campo) {
 function preencherFuncionarios() {
   var sel = document.getElementById('f-func');
   sel.innerHTML = '<option value="">Selecione...</option>' +
-    ST.funcionarios.map(function(f) {
-      var nome = typeof f === 'object' ? f.NOME : f;
+    ST.funcionarios.map(function(nome) {
       return '<option value="' + esc(nome) + '">' + esc(nome) + '</option>';
     }).join('');
 }
 
 // ════════════════════════════════════════
-// SALVAR
+// SALVAR APONTAMENTO
 // ════════════════════════════════════════
 function confirmarApontamento() {
   var func   = document.getElementById('f-func').value;
   var inicio = document.getElementById('f-inicio').value;
   var fim    = document.getElementById('f-fim').value;
   var qtd    = document.getElementById('f-qtd').value;
-  var status = document.getElementById('f-status').value;
   var obs    = document.getElementById('f-obs').value;
 
   if (!func)   { toast('Selecione o funcionário'); return; }
   if (!inicio) { toast('Informe o horário de início'); return; }
 
-  var payload = {
-    token: ST.token,
-    OP: ST.opSel.OP,
-    ETAPA: ST.etapaSel.ETAPA,
-    FUNCIONARIO: func,
-    DATA: hojeStr(),
-    HORA_INICIO: inicio,
-    HORA_FIM: fim,
-    QUANTIDADE: qtd,
-    UNIDADE: document.getElementById('f-unid').value,
-    STATUS: status,
-    OBSERVACAO: obs,
-  };
-
   load(true);
-  api('salvarApontamento', payload, function(r) {
-    load(false);
-    if (!r.ok) { toast('Erro: ' + r.erro); return; }
-    var msg = ST.opSel.OP + ' · ' + ST.etapaSel.ETAPA + '\n' + func + ' · ' + hojeStr();
-    document.getElementById('ok-msg').innerHTML = 'Apontamento registrado com sucesso.<br><small style="opacity:.6">' + msg + '</small>';
-    ir('s-ok');
+
+  // Pega próximo número de apontamento antes de salvar
+  api('getProximoApon', {}, function(rNum) {
+    var numero = (rNum && rNum.ok && rNum.numero) ? rNum.numero : ('AP-' + Date.now());
+    var nomeEtapa = ST.etapaSel.ETAPA || ST.etapaSel.NOME_ETAPA || ST.etapaSel.NOME || '';
+
+    var payload = {
+      numero:   numero,
+      nrop:     ST.opSel.NROP,
+      etapa:    nomeEtapa,
+      operador: func,
+      data:     hojeStr(),
+      horaIni:  inicio,
+      horaFim:  fim,
+      horas:    calcHoras(inicio, fim),
+      qtd:      qtd || '0',
+      refugo:   '0',
+      fotos:    '',
+      obs:      obs,
+    };
+
+    api('salvarApon', payload, function(r) {
+      load(false);
+      if (!r.ok) { toast('Erro: ' + (r.erro || 'Falha ao salvar')); return; }
+      document.getElementById('ok-msg').innerHTML =
+        'Apontamento registrado com sucesso.<br>' +
+        '<small style="opacity:.6">' + esc(ST.opSel.NROP) + ' · ' + esc(nomeEtapa) + ' · ' + esc(func) + '</small>';
+      ir('s-ok');
+    });
   });
 }
 
 function novoApontamento() {
-  // Volta para etapas da mesma OP
-  if (ST.opSel) selecionarOP(ST.opSel.OP);
+  if (ST.opSel) selecionarOP(ST.opSel.NROP);
   else ir('s-ops');
 }
 
 function logoutConfirm() {
   if (confirm('Sair do aplicativo?')) {
     ST.token = null; ST.usuario = null;
+    localStorage.removeItem('op_token');
+    localStorage.removeItem('op_usuario');
     ir('s-login');
   }
 }
@@ -844,10 +880,28 @@ function esc(s) {
 }
 
 // ════════════════════════════════════════
-// INIT
+// INIT — tenta retomar sessão salva
 // ════════════════════════════════════════
 window.addEventListener('load', function() {
-  setTimeout(function() { ir('s-login'); }, 1400);
+  var token   = localStorage.getItem('op_token');
+  var usuario = localStorage.getItem('op_usuario');
+
+  if (token && usuario) {
+    ST.token   = token;
+    ST.usuario = usuario;
+    // Verifica se o token ainda é válido
+    api('verificarSessao', { token: token }, function(r) {
+      if (r.ok && r.logado) {
+        carregarDados();
+      } else {
+        localStorage.removeItem('op_token');
+        localStorage.removeItem('op_usuario');
+        ir('s-login');
+      }
+    });
+  } else {
+    setTimeout(function() { ir('s-login'); }, 1400);
+  }
 });
 </script>
 </body>
