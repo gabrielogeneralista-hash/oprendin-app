@@ -458,39 +458,71 @@ body { background: #f4f5f7; color: #1c2427; }
       </div>
     </div>
 
-    <!-- Produção -->
+    <!-- % da Etapa -->
     <div class="card">
       <div class="card-header">
-        <div class="card-icon green">📦</div>
+        <div class="card-icon green">📊</div>
         <div>
-          <div class="card-title">Produção</div>
-          <div class="card-sub">O que foi feito?</div>
+          <div class="card-title">% da Etapa Concluída</div>
+          <div class="card-sub">Progresso acumulado desta etapa</div>
         </div>
       </div>
       <div class="card-body">
         <div class="field">
-          <label>Quantidade produzida</label>
-          <input type="number" id="f-qtd" placeholder="0" min="0" step="1" inputmode="numeric">
+          <div style="display:flex;align-items:center;gap:12px">
+            <input type="range" id="f-pct" min="0" max="100" value="0" style="flex:1;accent-color:var(--primary);height:6px"
+              oninput="document.getElementById('f-pct-val').textContent=this.value+'%';document.getElementById('f-pct-num').value=this.value">
+            <input type="number" id="f-pct-num" min="0" max="100" value="0" inputmode="numeric"
+              style="width:64px;height:44px;border:1.5px solid var(--border);border-radius:10px;text-align:center;font-size:16px;font-weight:700;color:var(--primary);background:var(--surface2)"
+              oninput="var v=Math.min(100,Math.max(0,this.value||0));this.value=v;document.getElementById('f-pct').value=v;document.getElementById('f-pct-val').textContent=v+'%'">
+          </div>
+          <div id="f-pct-val" style="text-align:center;font-size:22px;font-weight:800;color:var(--primary);margin-top:4px">0%</div>
+          <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:2px">💡 Percentual deve ser maior que apontamentos anteriores</div>
         </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Qtd. Produzida</label>
+            <input type="number" id="f-qtd" placeholder="0" min="0" step="1" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label>Qtd. Refugo</label>
+            <input type="number" id="f-refugo" placeholder="0" min="0" step="1" inputmode="numeric">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Descrição -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">📋</div>
+        <div>
+          <div class="card-title">Descrição</div>
+          <div class="card-sub">O que foi produzido?</div>
+        </div>
+      </div>
+      <div class="card-body">
         <div class="field">
-          <label>Unidade</label>
-          <select id="f-unid">
-            <option value="pç">Peças (pç)</option>
-            <option value="m">Metros (m)</option>
-            <option value="kg">Quilos (kg)</option>
-            <option value="h">Horas (h)</option>
-            <option value="%">Percentual (%)</option>
-          </select>
+          <input type="text" id="f-desc" placeholder="ex: Montagem do costado lateral, solda de topo...">
         </div>
-        <div class="field">
-          <label>Status da etapa</label>
-          <select id="f-status">
-            <option value="Em execução">Em execução</option>
-            <option value="Concluído">Concluído</option>
-            <option value="Atrasado">Atrasado</option>
-            <option value="Aguardando Liberação">Aguardando Liberação</option>
-          </select>
+      </div>
+    </div>
+
+    <!-- Fotos -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon amber">📷</div>
+        <div>
+          <div class="card-title">Fotos</div>
+          <div class="card-sub">Opcional</div>
         </div>
+      </div>
+      <div class="card-body">
+        <input type="file" id="f-fotos" accept="image/*" multiple style="display:none" onchange="onFotosChange(this)">
+        <button class="btn btn-secondary" style="height:48px;font-size:14px" onclick="document.getElementById('f-fotos').click()">
+          🖼 &nbsp;Selecionar fotos
+        </button>
+        <div id="f-fotos-info" style="display:none;font-size:13px;color:var(--success);font-weight:600;text-align:center;margin-top:4px"></div>
       </div>
     </div>
 
@@ -794,9 +826,15 @@ function selecionarEtapa(idx) {
   var ini = roundTo30(hh, mm);
   document.getElementById('f-inicio').value = ini;
   document.getElementById('f-fim').value = '';
+  document.getElementById('f-pct').value = 0;
+  document.getElementById('f-pct-num').value = 0;
+  document.getElementById('f-pct-val').textContent = '0%';
   document.getElementById('f-qtd').value = '';
+  document.getElementById('f-refugo').value = '';
+  document.getElementById('f-desc').value = '';
   document.getElementById('f-obs').value = '';
-  document.getElementById('f-status').value = 'Em execução';
+  document.getElementById('f-fotos-info').style.display = 'none';
+  document.getElementById('f-fotos').value = '';
 
   // Pílulas de horário rápido (opções a cada 30min em torno do atual)
   var pills = document.getElementById('pills-inicio');
@@ -830,43 +868,57 @@ function preencherFuncionarios() {
 // ════════════════════════════════════════
 // SALVAR APONTAMENTO
 // ════════════════════════════════════════
+function onFotosChange(input) {
+  var info = document.getElementById('f-fotos-info');
+  if (input.files && input.files.length) {
+    info.textContent = '✓ ' + input.files.length + ' foto(s) selecionada(s)';
+    info.style.display = '';
+  } else {
+    info.style.display = 'none';
+  }
+}
+
 function confirmarApontamento() {
   var func   = document.getElementById('f-func').value;
   var inicio = document.getElementById('f-inicio').value;
   var fim    = document.getElementById('f-fim').value;
+  var pct    = document.getElementById('f-pct').value;
   var qtd    = document.getElementById('f-qtd').value;
-  var obs    = document.getElementById('f-obs').value;
+  var refugo = document.getElementById('f-refugo').value;
+  var desc   = document.getElementById('f-desc').value.trim();
+  var obs    = document.getElementById('f-obs').value.trim();
 
   if (!func)   { toast('Selecione o funcionário'); return; }
   if (!inicio) { toast('Informe o horário de início'); return; }
 
   load(true);
 
-  // Pega próximo número de apontamento antes de salvar
   api('getProximoApon', {}, function(rNum) {
-    var numero = (rNum && rNum.ok && rNum.numero) ? rNum.numero : ('AP-' + Date.now());
+    var numero    = (rNum && rNum.ok && rNum.numero) ? rNum.numero : ('AP-' + Date.now());
     var nomeEtapa = ST.etapaSel.ETAPA || ST.etapaSel.NOME_ETAPA || ST.etapaSel.NOME || '';
 
     var payload = {
-      numero:   numero,
-      nrop:     ST.opSel.NROP,
-      etapa:    nomeEtapa,
-      operador: func,
-      data:     hojeStr(),
-      horaIni:  inicio,
-      horaFim:  fim,
-      horas:    calcHoras(inicio, fim),
-      qtd:      qtd || '0',
-      refugo:   '0',
-      fotos:    '',
-      obs:      obs,
+      numero:    numero,
+      nrop:      ST.opSel.NROP,
+      etapa:     nomeEtapa,
+      operador:  func,
+      data:      hojeStr(),
+      horaIni:   inicio,
+      horaFim:   fim,
+      horas:     calcHoras(inicio, fim),
+      pct:       pct || '0',
+      qtd:       qtd || pct || '0',
+      refugo:    refugo || '0',
+      descricao: desc,
+      obs:       obs,
+      fotos:     '',
     };
 
     api('salvarApon', payload, function(r) {
       load(false);
       if (!r.ok) { toast('Erro: ' + (r.erro || 'Falha ao salvar')); return; }
       document.getElementById('ok-msg').innerHTML =
-        'Apontamento registrado com sucesso.<br>' +
+        'Apontamento <strong>' + esc(numero) + '</strong> registrado com sucesso.<br>' +
         '<small style="opacity:.6">' + esc(ST.opSel.NROP) + ' · ' + esc(nomeEtapa) + ' · ' + esc(func) + '</small>';
       ir('s-ok');
     });
