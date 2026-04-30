@@ -56,7 +56,7 @@ body { background: #f4f5f7; color: #1c2427; }
   transition: opacity .25s, transform .25s;
 }
 .screen.active {
-  opacity: 1; pointer-events: all;
+  opacity: 1; pointer-events: auto;
   transform: translateY(0);
 }
 
@@ -121,6 +121,7 @@ body { background: #f4f5f7; color: #1c2427; }
 .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 44px; }
 
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row > div { display: flex; flex-direction: column; }
 
 /* ── BOTÕES ── */
 .btn {
@@ -226,7 +227,7 @@ body { background: #f4f5f7; color: #1c2427; }
   position: absolute; bottom: calc(var(--safe-bot) + 20px); left: 16px; right: 16px;
   pointer-events: none;
 }
-.fab-wrap .btn { pointer-events: all; box-shadow: 0 4px 20px rgba(96,125,139,.4); }
+.fab-wrap .btn { pointer-events: auto; box-shadow: 0 4px 20px rgba(96,125,139,.4); }
 
 /* ── STEP INDICATOR ── */
 .steps {
@@ -305,13 +306,87 @@ body { background: #f4f5f7; color: #1c2427; }
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 200;
 }
-#loading.show { opacity: 1; pointer-events: all; }
+#loading.show { opacity: 1; pointer-events: auto; }
 .loading-card {
   background: #fff; border-radius: 20px; padding: 32px 40px;
   display: flex; flex-direction: column; align-items: center; gap: 16px;
 }
 .loading-card .spinner { border-color: var(--border); border-top-color: var(--primary); }
 .loading-card span { font-size: 14px; font-weight: 600; color: var(--text2); }
+
+/* ── FORMULÁRIO MOBILE ── */
+.scroll-body { padding: 0 0 16px; gap: 0; }
+
+.fsec {
+  padding: 16px 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.fsec:first-child { border-top: 1px solid var(--border); margin-top: 8px; }
+.fsec-title {
+  font-size: 13px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px;
+}
+.fsec-sublabel { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 4px; }
+
+.finput {
+  display: block; width: 100%;
+  height: 52px; padding: 0 14px;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  font-size: 16px; color: var(--text); background: var(--surface2);
+  outline: none; -webkit-appearance: none; appearance: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.finput:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(96,125,139,.15);
+  background: #fff;
+}
+.finput select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23546e7a' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 44px; }
+select.finput { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23546e7a' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-color: var(--surface2); padding-right: 44px; }
+.ftextarea { height: auto; padding: 14px; resize: vertical; line-height: 1.5; }
+
+/* Slider de percentual */
+.pct-display {
+  text-align: center; font-size: 36px; font-weight: 800;
+  color: var(--primary); line-height: 1; margin: 4px 0 16px;
+}
+.pct-row { display: flex; align-items: center; gap: 10px; }
+.pct-lbl { font-size: 12px; color: var(--text2); font-weight: 600; flex-shrink: 0; }
+.pct-slider {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 28px; /* área toque grande */ background: transparent; cursor: pointer;
+}
+.pct-slider::-webkit-slider-runnable-track {
+  height: 8px; border-radius: 4px; background: var(--border);
+}
+.pct-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--primary); border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(96,125,139,.4);
+  margin-top: -10px;
+}
+.pct-slider::-moz-range-track { height: 8px; border-radius: 4px; background: var(--border); }
+.pct-slider::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(96,125,139,.4); }
+.pct-num {
+  width: 60px; height: 48px; border: 1.5px solid var(--border); border-radius: 10px;
+  text-align: center; font-size: 16px; font-weight: 700; color: var(--primary);
+  background: var(--surface2); flex-shrink: 0; outline: none;
+}
+.pct-num:focus { border-color: var(--primary); }
+.pct-hint { font-size: 11px; color: var(--text2); text-align: center; margin-top: 8px; }
+
+/* Botão de foto via label (mais confiável em mobile) */
+.foto-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 52px; border-radius: 10px; border: 1.5px dashed var(--primary);
+  background: var(--info-bg); color: var(--primary);
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.foto-btn input[type="file"] { display: none; }
+.foto-btn:active { opacity: .7; }
 
 /* ── ERRO ── */
 .err-msg { font-size: 13px; color: var(--danger); font-weight: 600; text-align: center; }
@@ -410,143 +485,85 @@ body { background: #f4f5f7; color: #1c2427; }
     <div class="step-dot done"></div>
     <div class="step-dot active"></div>
   </div>
-  <div class="scroll-body">
+  <div class="scroll-body" id="form-scroll">
 
-    <!-- Identificação -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-icon blue">👤</div>
+    <!-- Seção: Operador -->
+    <div class="fsec">
+      <div class="fsec-title">👤 Operador *</div>
+      <select id="f-func" class="finput">
+        <option value="">Selecione o funcionário...</option>
+      </select>
+    </div>
+
+    <!-- Seção: Horário -->
+    <div class="fsec">
+      <div class="fsec-title">⏱ Horário</div>
+      <div class="time-pills" id="pills-inicio" style="margin-bottom:10px"></div>
+      <div class="field-row">
         <div>
-          <div class="card-title">Operador</div>
-          <div class="card-sub">Quem está executando?</div>
+          <div class="fsec-sublabel">Início *</div>
+          <input type="time" id="f-inicio" class="finput">
         </div>
-      </div>
-      <div class="card-body">
-        <div class="field">
-          <label>Funcionário</label>
-          <select id="f-func">
-            <option value="">Selecione...</option>
-          </select>
+        <div>
+          <div class="fsec-sublabel">Fim</div>
+          <input type="time" id="f-fim" class="finput">
         </div>
       </div>
     </div>
 
-    <!-- Horário -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-icon amber">⏱</div>
-        <div>
-          <div class="card-title">Horário</div>
-          <div class="card-sub">Período trabalhado</div>
-        </div>
+    <!-- Seção: % Etapa -->
+    <div class="fsec">
+      <div class="fsec-title">📊 % da Etapa Concluída</div>
+      <div class="pct-display" id="f-pct-val">0%</div>
+      <div class="pct-row">
+        <span class="pct-lbl">0</span>
+        <input type="range" id="f-pct" min="0" max="100" value="0" class="pct-slider"
+          oninput="syncPct(this.value)">
+        <span class="pct-lbl">100</span>
+        <input type="number" id="f-pct-num" min="0" max="100" value="0" inputmode="numeric" class="pct-num"
+          oninput="var v=Math.min(100,Math.max(0,parseInt(this.value)||0));this.value=v;syncPct(v)">
       </div>
-      <div class="card-body">
-        <div class="field">
-          <label>Início rápido</label>
-          <div class="time-pills" id="pills-inicio"></div>
+      <div class="pct-hint">💡 Informe o % acumulado concluído desta etapa</div>
+      <div class="field-row" style="margin-top:12px">
+        <div>
+          <div class="fsec-sublabel">Qtd. Produzida</div>
+          <input type="number" id="f-qtd" class="finput" placeholder="0" min="0" step="1" inputmode="numeric">
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Início</label>
-            <input type="time" id="f-inicio">
-          </div>
-          <div class="field">
-            <label>Fim</label>
-            <input type="time" id="f-fim">
-          </div>
+        <div>
+          <div class="fsec-sublabel">Qtd. Refugo</div>
+          <input type="number" id="f-refugo" class="finput" placeholder="0" min="0" step="1" inputmode="numeric">
         </div>
       </div>
     </div>
 
-    <!-- % da Etapa -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-icon green">📊</div>
-        <div>
-          <div class="card-title">% da Etapa Concluída</div>
-          <div class="card-sub">Progresso acumulado desta etapa</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="field">
-          <div style="display:flex;align-items:center;gap:12px">
-            <input type="range" id="f-pct" min="0" max="100" value="0" style="flex:1;accent-color:var(--primary);height:6px"
-              oninput="document.getElementById('f-pct-val').textContent=this.value+'%';document.getElementById('f-pct-num').value=this.value">
-            <input type="number" id="f-pct-num" min="0" max="100" value="0" inputmode="numeric"
-              style="width:64px;height:44px;border:1.5px solid var(--border);border-radius:10px;text-align:center;font-size:16px;font-weight:700;color:var(--primary);background:var(--surface2)"
-              oninput="var v=Math.min(100,Math.max(0,this.value||0));this.value=v;document.getElementById('f-pct').value=v;document.getElementById('f-pct-val').textContent=v+'%'">
-          </div>
-          <div id="f-pct-val" style="text-align:center;font-size:22px;font-weight:800;color:var(--primary);margin-top:4px">0%</div>
-          <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:2px">💡 Percentual deve ser maior que apontamentos anteriores</div>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Qtd. Produzida</label>
-            <input type="number" id="f-qtd" placeholder="0" min="0" step="1" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label>Qtd. Refugo</label>
-            <input type="number" id="f-refugo" placeholder="0" min="0" step="1" inputmode="numeric">
-          </div>
-        </div>
-      </div>
+    <!-- Seção: Descrição -->
+    <div class="fsec">
+      <div class="fsec-title">📋 Descrição do que foi produzido</div>
+      <input type="text" id="f-desc" class="finput" placeholder="ex: Montagem do costado lateral, solda de topo..." autocomplete="off">
     </div>
 
-    <!-- Descrição -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-icon blue">📋</div>
-        <div>
-          <div class="card-title">Descrição</div>
-          <div class="card-sub">O que foi produzido?</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="field">
-          <input type="text" id="f-desc" placeholder="ex: Montagem do costado lateral, solda de topo...">
-        </div>
-      </div>
+    <!-- Seção: Fotos — label wrapping garante funcionamento em qualquer mobile -->
+    <div class="fsec">
+      <div class="fsec-title">📷 Fotos <span style="font-weight:400;font-size:12px;color:var(--text2)">(opcional)</span></div>
+      <label class="foto-btn" for="f-fotos">
+        🖼 &nbsp;Selecionar / Tirar foto
+        <input type="file" id="f-fotos" accept="image/*" multiple onchange="onFotosChange(this)">
+      </label>
+      <div id="f-fotos-info" style="display:none;margin-top:8px;padding:8px 12px;background:var(--success-bg);border-radius:8px;font-size:13px;color:var(--success);font-weight:600"></div>
     </div>
 
-    <!-- Fotos -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-icon amber">📷</div>
-        <div>
-          <div class="card-title">Fotos</div>
-          <div class="card-sub">Opcional</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <input type="file" id="f-fotos" accept="image/*" multiple style="display:none" onchange="onFotosChange(this)">
-        <button class="btn btn-secondary" style="height:48px;font-size:14px" onclick="document.getElementById('f-fotos').click()">
-          🖼 &nbsp;Selecionar fotos
-        </button>
-        <div id="f-fotos-info" style="display:none;font-size:13px;color:var(--success);font-weight:600;text-align:center;margin-top:4px"></div>
-      </div>
+    <!-- Seção: Observações -->
+    <div class="fsec">
+      <div class="fsec-title">📝 Observações <span style="font-weight:400;font-size:12px;color:var(--text2)">(opcional)</span></div>
+      <textarea id="f-obs" class="finput ftextarea" rows="4" placeholder="Ocorrências, paradas, problemas de qualidade..."></textarea>
     </div>
 
-    <!-- Observações -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-icon red">📝</div>
-        <div>
-          <div class="card-title">Observações</div>
-          <div class="card-sub">Opcional</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="field">
-          <textarea id="f-obs" rows="3" placeholder="Ocorrências, paradas, qualidade..."></textarea>
-        </div>
-      </div>
-    </div>
-
+    <div style="height:80px"></div><!-- espaço para o botão salvar -->
   </div>
 
-  <!-- Botão fixo -->
-  <div class="fab-wrap">
-    <button class="btn btn-primary" onclick="confirmarApontamento()">
+  <!-- Botão salvar (sticky no final do scroll) -->
+  <div style="position:sticky;bottom:0;padding:12px 16px calc(var(--safe-bot) + 12px);background:linear-gradient(transparent,var(--surface2) 30%);pointer-events:none">
+    <button class="btn btn-primary" style="pointer-events:auto;box-shadow:0 4px 20px rgba(96,125,139,.4)" onclick="confirmarApontamento()">
       ✓ &nbsp;Salvar Apontamento
     </button>
   </div>
@@ -826,15 +843,16 @@ function selecionarEtapa(idx) {
   var ini = roundTo30(hh, mm);
   document.getElementById('f-inicio').value = ini;
   document.getElementById('f-fim').value = '';
-  document.getElementById('f-pct').value = 0;
-  document.getElementById('f-pct-num').value = 0;
-  document.getElementById('f-pct-val').textContent = '0%';
+  syncPct(0);
   document.getElementById('f-qtd').value = '';
   document.getElementById('f-refugo').value = '';
   document.getElementById('f-desc').value = '';
   document.getElementById('f-obs').value = '';
   document.getElementById('f-fotos-info').style.display = 'none';
-  document.getElementById('f-fotos').value = '';
+  try { document.getElementById('f-fotos').value = ''; } catch(e) {}
+  // Rola para o topo do form
+  var sb = document.getElementById('form-scroll');
+  if (sb) sb.scrollTop = 0;
 
   // Pílulas de horário rápido (opções a cada 30min em torno do atual)
   var pills = document.getElementById('pills-inicio');
@@ -868,6 +886,13 @@ function preencherFuncionarios() {
 // ════════════════════════════════════════
 // SALVAR APONTAMENTO
 // ════════════════════════════════════════
+function syncPct(v) {
+  v = Math.min(100, Math.max(0, parseInt(v) || 0));
+  document.getElementById('f-pct').value = v;
+  document.getElementById('f-pct-num').value = v;
+  document.getElementById('f-pct-val').textContent = v + '%';
+}
+
 function onFotosChange(input) {
   var info = document.getElementById('f-fotos-info');
   if (input.files && input.files.length) {
